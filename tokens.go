@@ -18,14 +18,16 @@ func (t *TokenForest) Add(tokens ...Token) {
 	t.values = append(t.values, tokens...)
 }
 
-func (t *TokenForest) Join(other TokenForest) {
+func (t *TokenForest) Join(other TokenForest) int {
 	t.values = append(t.values, other.values...)
+	return len(other.values)
 }
 
-func (t *TokenForest) JoinIgnoreError(forest TokenForest, err error) {
+func (t *TokenForest) JoinIgnoreError(forest TokenForest, err error) bool {
 	if err == nil {
-		t.Join(forest)
+		return t.Join(forest) > 0
 	}
+	return false
 }
 
 func (t TokenForest) StringTabbed(tabCount int) string {
@@ -88,7 +90,7 @@ type CommentToken struct {
 }
 
 func (t CommentToken) AsString(tabCount int) string {
-	return Tab(tabCount) + "COMMENT(value: '" + t.value + "')"
+	return fmt.Sprintf("%sCOMMENT(value: '%s')", Tab(tabCount), t.value)
 }
 
 type WhitespaceToken struct {
@@ -108,9 +110,31 @@ func (t NewLineToken) AsString(tabCount int) string {
 }
 
 type ContinuationToken struct {
-	value string
 }
 
 func (t ContinuationToken) AsString(tabCount int) string {
 	return Tab(tabCount) + "CONTINUATION()"
+}
+
+type PrimitiveCallToken struct {
+	kind   string
+	values TokenForest
+}
+
+func (t PrimitiveCallToken) AsString(tabCount int) string {
+	tab := Tab(tabCount)
+	switch t.values.Len() {
+	case 0:
+		return fmt.Sprintf("%sPRIMITIVECALL(kind: %s, values: %s)", tab, t.kind, t.values.StringTabbed(tabCount+1))
+	default:
+		return fmt.Sprintf("%sPRIMITIVECALL(kind: %s, values: %s\n%s)", tab, t.kind, t.values.StringTabbed(tabCount+1), tab)
+	}
+}
+
+type StringToken struct {
+	value string
+}
+
+func (t StringToken) AsString(tabCount int) string {
+	return Tab(tabCount) + fmt.Sprintf("STRING(value: '%s')", t.value)
 }
