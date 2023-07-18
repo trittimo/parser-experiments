@@ -31,6 +31,8 @@ func (p *Parser) Parse() (forest TokenForest, acceptError error) {
 		acceptError = err
 	} else if f.Len() == 0 {
 		acceptError = errors.New("no statements found")
+	} else if p.Cursor() != len(p.text) {
+		acceptError = errors.New("could not match entire text")
 	} else {
 		forest = f
 	}
@@ -124,11 +126,14 @@ func (p *Parser) Literal() (literal string, acceptError error) {
 	defer p.DeleteCursor(&acceptError)
 	if matchResult, err := p.Regex(literalRegex); err != nil {
 		acceptError = errors.New("expected literal")
+		return
 	} else {
 		literal = p.MatchRange(matchResult)
 	}
 	return
 }
+
+var continuationRegex = regexp.MustCompile(`^[0-9]\s`)
 
 func (p *Parser) AcceptContinuationToken() (forest TokenForest, acceptError error) {
 	p.SaveCursor()
@@ -138,10 +143,14 @@ func (p *Parser) AcceptContinuationToken() (forest TokenForest, acceptError erro
 		return
 	}
 	forest.JoinIgnoreError(p.AcceptWhitespaceToken())
-	if !p.Matches("1") {
-		acceptError = errors.New("expected continuation literal '1'")
+
+	if matchResult, err := p.Regex(continuationRegex); err != nil {
+		acceptError = errors.New("expected continuation literal 'digit'")
 		return
+	} else {
+		_ = matchResult
 	}
+
 	forest.JoinIgnoreError(p.AcceptWhitespaceToken())
 	// Bring back this line if you want to keep continuations in the parse tree
 	// forest.Add(ContinuationToken{})
@@ -153,11 +162,11 @@ var whitespaceRegex = regexp.MustCompile(`^[ \t]+`)
 func (p *Parser) AcceptWhitespaceToken() (forest TokenForest, acceptError error) {
 	p.SaveCursor()
 	defer p.DeleteCursor(&acceptError)
+	if continuationForest, err := p.AcceptContinuationToken(); err == nil {
+		forest.Join(continuationForest)
+	}
+
 	if matchResult, err := p.Regex(whitespaceRegex); err != nil {
-		if continuationForest, err := p.AcceptContinuationToken(); err == nil {
-			forest.Join(continuationForest)
-			return
-		}
 		acceptError = errors.New("expected whitespace")
 	} else {
 		_ = matchResult

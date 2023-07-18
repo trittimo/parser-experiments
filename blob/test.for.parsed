@@ -13,5 +13,6 @@
 			STRING(value: 'Hello, World!'),
 			STRING(value: 'another test')
 		]
-	)
+	),
+	COMMENT(value: ' Hello')
 ]

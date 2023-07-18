@@ -7,7 +7,7 @@ func TestWhitespace(t *testing.T) {
 	parser := CreateParser(&text)
 	if forest, err := parser.AcceptWhitespaceToken(); err != nil {
 		t.Fatalf("Whitespace not accepted: %s", err)
-	} else if forest.Len() != 1 {
+	} else if forest.Len() != 0 {
 		t.Fatalf("Unexpected forest length: %d", forest.Len())
 	}
 	if parser.Cursor() != 2 {

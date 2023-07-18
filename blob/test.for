@@ -6,4 +6,6 @@ end program
 
   ! This is a comment line; it is ignored by the compiler
   print *, 'Hello, World!', 
-1          'another test'
+2          'another test'
+
+! Hello
