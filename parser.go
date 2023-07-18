@@ -143,6 +143,8 @@ func (p *Parser) AcceptContinuationToken() (forest TokenForest, acceptError erro
 		return
 	}
 	forest.JoinIgnoreError(p.AcceptWhitespaceToken())
+	// Bring back this line if you want to keep continuations in the parse tree
+	// forest.Add(ContinuationToken{})
 	return
 }
 
@@ -158,7 +160,9 @@ func (p *Parser) AcceptWhitespaceToken() (forest TokenForest, acceptError error)
 		}
 		acceptError = errors.New("expected whitespace")
 	} else {
-		forest.Add(WhitespaceToken{value: p.MatchRange(matchResult)})
+		_ = matchResult
+		// Bring back this line if you want to keep whitespace in the resulting parse tree
+		// forest.Add(WhitespaceToken{value: p.MatchRange(matchResult)})
 		forest.JoinIgnoreError(p.AcceptContinuationToken())
 	}
 	return
@@ -172,7 +176,8 @@ func (p *Parser) AcceptNewLineToken() (forest TokenForest, acceptError error) {
 	if matchResult, err := p.Regex(newLineRegex); err != nil {
 		acceptError = errors.New("expected newline(s)")
 	} else {
-		forest.Add(NewLineToken{value: p.MatchRange(matchResult)})
+		_ = matchResult
+		// forest.Add(NewLineToken{value: p.MatchRange(matchResult)})
 	}
 	return
 }
@@ -187,6 +192,7 @@ func (p *Parser) AcceptCommentToken() (forest TokenForest, acceptError error) {
 	if matchResult, err := p.Regex(commentRegex); err != nil {
 		acceptError = errors.New("expected comment")
 	} else {
+		matchResult[0]++ // Remove the !
 		forest.Add(CommentToken{value: p.MatchRange(matchResult)})
 	}
 	return

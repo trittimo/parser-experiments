@@ -25,12 +25,13 @@ func (t *TokenForest) Join(other TokenForest) int {
 
 func (t *TokenForest) JoinIgnoreError(forest TokenForest, err error) bool {
 	if err == nil {
-		return t.Join(forest) > 0
+		t.Join(forest)
+		return true
 	}
 	return false
 }
 
-func (t TokenForest) StringTabbed(tabCount int) string {
+func (t TokenForest) AsString(tabCount int) string {
 	switch len(t.values) {
 	case 0:
 		return "[]"
@@ -52,7 +53,7 @@ func (t TokenForest) StringTabbed(tabCount int) string {
 }
 
 func (t TokenForest) String() string {
-	return t.StringTabbed(0)
+	return t.AsString(0)
 }
 
 func (t *TokenForest) Len() int {
@@ -79,9 +80,9 @@ func (t ProgramToken) AsString(tabCount int) string {
 	tab := Tab(tabCount)
 	switch t.statements.Len() {
 	case 0:
-		return fmt.Sprintf("%sPROGRAM(name: %s, statements: %s)", tab, t.name, t.statements.StringTabbed(tabCount+1))
+		return fmt.Sprintf("%sPROGRAM(name: %s, statements: %s)", tab, t.name, t.statements.AsString(tabCount+1))
 	default:
-		return fmt.Sprintf("%sPROGRAM(name: %s, statements: %s\n%s)", tab, t.name, t.statements.StringTabbed(tabCount+1), tab)
+		return fmt.Sprintf("%sPROGRAM(name: %s, statements: %s\n%s)", tab, t.name, t.statements.AsString(tabCount+1), tab)
 	}
 }
 
@@ -93,6 +94,7 @@ func (t CommentToken) AsString(tabCount int) string {
 	return fmt.Sprintf("%sCOMMENT(value: '%s')", Tab(tabCount), t.value)
 }
 
+//lint:ignore U1000 We may some day bring back whitespace token into the parse tree, so ignore this
 type WhitespaceToken struct {
 	value string
 }
@@ -101,6 +103,7 @@ func (t WhitespaceToken) AsString(tabCount int) string {
 	return Tab(tabCount) + "WHITESPACE()"
 }
 
+//lint:ignore U1000 We may some day bring back whitespace token into the parse tree, so ignore this
 type NewLineToken struct {
 	value string
 }
@@ -125,9 +128,9 @@ func (t PrimitiveCallToken) AsString(tabCount int) string {
 	tab := Tab(tabCount)
 	switch t.values.Len() {
 	case 0:
-		return fmt.Sprintf("%sPRIMITIVECALL(kind: %s, values: %s)", tab, t.kind, t.values.StringTabbed(tabCount+1))
+		return fmt.Sprintf("%sPRIMITIVECALL(kind: %s, values: %s)", tab, t.kind, t.values.AsString(tabCount+1))
 	default:
-		return fmt.Sprintf("%sPRIMITIVECALL(kind: %s, values: %s\n%s)", tab, t.kind, t.values.StringTabbed(tabCount+1), tab)
+		return fmt.Sprintf("%sPRIMITIVECALL(kind: %s, values: %s\n%s)", tab, t.kind, t.values.AsString(tabCount+1), tab)
 	}
 }
 
@@ -137,4 +140,29 @@ type StringToken struct {
 
 func (t StringToken) AsString(tabCount int) string {
 	return Tab(tabCount) + fmt.Sprintf("STRING(value: '%s')", t.value)
+}
+
+type TypeToken struct {
+	kind string
+}
+
+type FunctionToken struct {
+	returnType  Token
+	returnValue TokenForest
+	statements  TokenForest
+	name        string
+}
+
+func (t FunctionToken) AsString(tabCount int) string {
+	tab := Tab(tabCount)
+	statements := "[]"
+	endparen := ")"
+	returnType := t.returnType.AsString(tabCount + 1)
+	returnValue := t.returnValue.AsString(tabCount + 1)
+	if t.statements.Len() > 0 {
+		statements = t.statements.AsString(tabCount + 1)
+		endparen = tab + ")"
+	}
+	return tab + fmt.Sprintf("FUNCTION(name: %s, returnType: %s, returnValue: %s, statements: %s%s",
+		t.name, returnType, returnValue, statements, endparen)
 }
